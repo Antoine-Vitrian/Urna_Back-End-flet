@@ -23,7 +23,7 @@ cursor.execute('''
 
 # Tabela de Eleitores
 cursor.execute('''
-    CREATE TABLE IF NOT EXISTS eleitores (
+    CREATE TABLE IF NOT EXISTS usuarios (
         cpf TEXT PRIMARY KEY,
         nome TEXT,
         rg TEXT,
@@ -55,17 +55,31 @@ cursor.execute('''
     )
 ''')
 
-# Fechando a conexão
-connection.close()
 
-# Funções para facilitar visualizações no Front-End
 
-def ver_votos_function():
-    connection = sqlite3.connect("urna_futuro.db")
+# checa se a tabela tipo_usuario já foi preenchida
+cursor.execute('SELECT * FROM tipo_usuario')
+existe = True if len(cursor.fetchall()) > 0 else False
 
-    # Cria a View
+if not existe: # cria os tipos de usuários
     cursor.execute('''
-    CREATE VIEW votos_por_candidato AS
+    INSERT INTO tipo_usuario (tipo)
+    VALUES('eleitor'), ('admin')
+    ''')
+
+# checa se o admin existe
+cursor.execute('SELECT * FROM usuarios WHERE tipo = 2')
+existe = True if len(cursor.fetchall()) > 0 else False
+
+if not existe:
+    cursor.execute('''
+INSERT INTO usuarios (cpf, nome, rg, data_nasc, tipo)
+VALUES (11111111111, 'Admin', 1111111, 00/00/0000, 2)
+''')
+
+# Views
+cursor.execute('''
+    CREATE VIEW IF NOT EXISTS votos_por_candidato AS
         SELECT 
             c.numero,
             c.nome,
@@ -81,102 +95,165 @@ def ver_votos_function():
         GROUP BY c.numero, c.nome, c.partido;
 ''')
 
+# Fechando a conexão
+connection.close()
+
 # Funções para facilitar visualizações no Front-End
 
 def ver_votos_function():
+    connection = sqlite3.connect("urna_futuro.db")
+    cursor = connection.cursor()
     # Executa a View
-    dados = cursor.execute('''
+    votos = cursor.execute('''
     SELECT 
         nome,
         total_votos
     FROM votos_por_candidato
 ''').fetchall()
     
-    print(dados)
+    connection.close()
+    return votos
     
 def ver_candidatos():
     connection = sqlite3.connect("urna_futuro.db")
-    cursor.execute('''
+    cursor = connection.cursor()
+    
+    candidatos = cursor.execute('''
     SELECT * FROM candidatos
 ''').fetchall()
     
     connection.close()
+    return candidatos
 
-def ver_eleitor():
+def ver_eleitores():
     connection = sqlite3.connect("urna_futuro.db")
-    cursor.execute('''
-    SELECT * FROM eleitores
+    cursor = connection.cursor()
+    
+    eleitores = cursor.execute('''
+SELECT cpf, nome, rg, data_nasc
+FROM usuarios
+WHERE tipo = 1
 ''').fetchall()
     
     connection.close()
+    return eleitores
+
+def ver_candidato(num):
+    connection = sqlite3.connect("urna_futuro.db")
+    cursor = connection.cursor()
+
+    candidato = cursor.execute('''
+SELECT * 
+FROM candidatos
+WHERE numero = ?
+''', (num,)).fetchall()
     
+    if len(candidato) > 0:
+        return candidato[0]
+    else:
+        return None
+
+def ver_eleitor(cpf):
+    connection = sqlite3.connect("urna_futuro.db")
+    cursor = connection.cursor()
+
+    eleitor = cursor.execute('''
+SELECT * 
+FROM usuarios
+WHERE cpf = ? AND tipo = 1
+''', (cpf,)).fetchall()
+    
+    if len(eleitor) > 0:
+        return eleitor[0]
+    else:
+        return None
+
 # Função pra cadastrar candidatos
 def adicionar_candidato(number, name, partido_politico, slogans, propostas):
     connection = sqlite3.connect("urna_futuro.db")
+    cursor = connection.cursor()
     try:
         cursor.execute("""
-            INSERT INTO candidatos (numero, nome, partido, slogan, propostas)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO candidatos (numero, nome, partido, slogan, proposta)
+            VALUES (?, ?, ?, ?, ?)
         """, (
-            number.value,
-            name.value,
-            partido_politico.value,
-            slogans.value,
-            propostas.value
+            number,
+            name,
+            partido_politico,
+            slogans,
+            propostas
         ))
         connection.commit()
 
-        # Limpa os campos
-        for campo in [number, name, partido_politico, slogans, propostas]:
-            campo.value = ""
-
+        return {'mensagem': 'sucesso ao adicionar'}
     except Exception as erro:
         print("Erro ao adicionar candidato:", erro)
+        return {
+            'mensagem': 'erro ao adicionar candidato',
+            'erro': erro    
+        }
 
+    finally:
         connection.close()
 
 # Função para cadastrar eleitor
-def adicionar_eleitor(cpf, nome, rg, tipo_usuario):
+def adicionar_eleitor(cpf, nome, rg):
     connection = sqlite3.connect("urna_futuro.db")
+    cursor = connection.cursor()
     try:
         cursor.execute("""
-            INSERT INTO eleitores (cpf, nome, rg, tipo_usuario)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO usuarios (cpf, nome, rg, tipo)
+            VALUES (?, ?, ?, 1)
         """, (
-            cpf.value,
-            nome.value,
-            rg.value,
-            tipo_usuario.value
+            cpf,
+            nome,
+            rg,
         ))
         connection.commit()
 
-        # Limpa os campos
-        for campo in [cpf, nome, rg, tipo_usuario]:
-            campo.value = ""
+        return {
+            'mensagem': 'Sucesso ao adicionar eleitor.'
+        }
 
     except Exception as erro:
         print("Erro ao adicionar eleitor:", erro)
-
+        return {
+            'mensagem': 'Erro ao adicionar eleitor.',
+            'erro': erro
+        }
     connection.close()
 
 # Função para adicionar voto
 def votar(eleitor, candidato):
     connection = sqlite3.connect("urna_futuro.db")
+    cursor = connection.cursor()
+
     try:
         cursor.execute("""
-            INSERT INTO votos (numero, nome, partido, slogan, propostas)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO votos (eleitor, candidato)
+            VALUES (?, ?)
         """, (
-            eleitor.value,
-            candidato.value
+            eleitor,
+            candidato
         ))
         connection.commit()
 
-        # Limpa os campos
-        for campo in [eleitor, candidato]:
-            campo.value = ""
+        teste = cursor.execute("""
+SELECT * 
+FROM votos
+ORDER BY id DESC
+LIMIT 1
+""").fetchall()
+
+        print(teste)
+
+        return {'mensagem': 'sucesso'}
 
     except Exception as erro:
+        connection.close()
         print("Erro ao adicionar voto:", erro)
 
-    connection.close()
+        return {'mensagem': erro}
+
+    finally:
+        connection.close()
