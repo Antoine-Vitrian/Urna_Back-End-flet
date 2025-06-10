@@ -27,7 +27,6 @@ cursor.execute('''
         cpf TEXT PRIMARY KEY,
         nome TEXT,
         rg TEXT,
-        data_nasc DATE,
         FOREIGN KEY (tipo) REFERENCES tipo_usuario(id)  
     )
 ''')
@@ -52,9 +51,14 @@ cursor.execute('''
     )
 ''')
 
+# Fechando a conexão
+connection.close()
+
 # Funções para facilitar visualizações no Front-End
 
 def ver_votos_function():
+    connection = sqlite3.connect("urna_futuro.db")
+
     # Cria a View
     cursor.execute('''
     CREATE VIEW votos_por_candidato AS
@@ -81,6 +85,88 @@ def ver_votos_function():
 ''').fetchall()
     
 def ver_candidatos():
+    connection = sqlite3.connect("urna_futuro.db")
     cursor.execute('''
     SELECT * FROM candidatos
 ''').fetchall()
+    
+    connection.close()
+
+def ver_eleitor():
+    connection = sqlite3.connect("urna_futuro.db")
+    cursor.execute('''
+    SELECT * FROM eleitores
+''').fetchall()
+    
+    connection.close()
+    
+# Função pra cadastrar candidatos
+def adicionar_candidato(number, name, partido_politico, slogans, propostas):
+    connection = sqlite3.connect("urna_futuro.db")
+    try:
+        cursor.execute("""
+            INSERT INTO candidatos (numero, nome, partido, slogan, propostas)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            number.value,
+            name.value,
+            partido_politico.value,
+            slogans.value,
+            propostas.value
+        ))
+        connection.commit()
+
+        # Limpa os campos
+        for campo in [number, name, partido_politico, slogans, propostas]:
+            campo.value = ""
+
+    except Exception as erro:
+        print("Erro ao adicionar candidato:", erro)
+
+        connection.close()
+
+# Função para cadastrar eleitor
+def adicionar_eleitor(cpf, nome, rg, tipo_usuario):
+    connection = sqlite3.connect("urna_futuro.db")
+    try:
+        cursor.execute("""
+            INSERT INTO eleitores (cpf, nome, rg, tipo_usuario)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            cpf.value,
+            nome.value,
+            rg.value,
+            tipo_usuario.value
+        ))
+        connection.commit()
+
+        # Limpa os campos
+        for campo in [cpf, nome, rg, tipo_usuario]:
+            campo.value = ""
+
+    except Exception as erro:
+        print("Erro ao adicionar eleitor:", erro)
+
+    connection.close()
+
+# Função para adicionar voto
+def votar(eleitor, candidato):
+    connection = sqlite3.connect("urna_futuro.db")
+    try:
+        cursor.execute("""
+            INSERT INTO votos (numero, nome, partido, slogan, propostas)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            eleitor.value,
+            candidato.value
+        ))
+        connection.commit()
+
+        # Limpa os campos
+        for campo in [eleitor, candidato]:
+            campo.value = ""
+
+    except Exception as erro:
+        print("Erro ao adicionar voto:", erro)
+
+    connection.close()
