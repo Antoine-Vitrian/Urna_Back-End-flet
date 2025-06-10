@@ -28,6 +28,7 @@ cursor.execute('''
         nome TEXT,
         rg TEXT,
         data_nasc DATE,
+        tipo INTEGER,
         FOREIGN KEY (tipo) REFERENCES tipo_usuario(id)  
     )
 ''')
@@ -47,17 +48,16 @@ cursor.execute('''
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS votos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        eleitor INTEGER,
+        candidato INTEGER,
         FOREIGN KEY (eleitor) REFERENCES eleitores(cpf),
         FOREIGN KEY (candidato) REFERENCES candidatos(numero)
     )
 ''')
 
-# Funções para facilitar visualizações no Front-End
-
-def ver_votos_function():
-    # Cria a View
-    cursor.execute('''
-    CREATE VIEW votos_por_candidato AS
+# views
+cursor.execute('''
+    CREATE VIEW IF NOT EXISTS votos_por_candidato AS
         SELECT 
             c.numero,
             c.nome,
@@ -72,13 +72,19 @@ def ver_votos_function():
         LEFT JOIN votos v ON c.numero = v.candidato
         GROUP BY c.numero, c.nome, c.partido;
 ''')
+
+# Funções para facilitar visualizações no Front-End
+
+def ver_votos_function():
     # Executa a View
-    cursor.execute('''
+    dados = cursor.execute('''
     SELECT 
-        candidato,
+        nome,
         total_votos
-    FROM ver_votos
+    FROM votos_por_candidato
 ''').fetchall()
+    
+    print(dados)
     
 def ver_candidatos():
     cursor.execute('''

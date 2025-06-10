@@ -1,0 +1,25 @@
+# Ignora o cache do Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Ignora arquivos de banco de dados SQLite
+*.sqlite
+*.sqlite3
+*.db
+
+# Ignora ambientes virtuais 
+venv/
+.env/
+.venv/
+
+# Ignora arquivos temporários e de backup
+*.log
+*.tmp
+*.bak
+*.swp
+*.~ 
+
+# Ignora configurações de IDEs comuns
+.vscode/
+.idea/
