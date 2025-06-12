@@ -26,8 +26,7 @@ cursor.execute('''
     CREATE TABLE IF NOT EXISTS usuarios (
         cpf TEXT PRIMARY KEY,
         nome TEXT,
-        rg TEXT,
-        data_nasc DATE,
+        senha TEXT,
         tipo INTEGER,
         FOREIGN KEY (tipo) REFERENCES tipo_usuario(id)  
     )
@@ -73,8 +72,8 @@ existe = True if len(cursor.fetchall()) > 0 else False
 
 if not existe:
     cursor.execute('''
-INSERT INTO usuarios (cpf, nome, rg, data_nasc, tipo)
-VALUES (11111111111, 'Admin', 1111111, 00/00/0000, 2)
+INSERT INTO usuarios (cpf, nome, senha, tipo)
+VALUES (11111111111, 'Admin', 'senha_supersecreta', 2)
 ''')
 
 # Views
@@ -130,7 +129,7 @@ def ver_eleitores():
     cursor = connection.cursor()
     
     eleitores = cursor.execute('''
-SELECT cpf, nome, rg, data_nasc
+SELECT cpf, nome
 FROM usuarios
 WHERE tipo = 1
 ''').fetchall()
@@ -197,17 +196,17 @@ def adicionar_candidato(number, name, partido_politico, slogans, propostas):
         connection.close()
 
 # Função para cadastrar eleitor
-def adicionar_eleitor(cpf, nome, rg):
+def adicionar_eleitor(cpf, nome, senha):
     connection = sqlite3.connect("urna_futuro.db")
     cursor = connection.cursor()
     try:
         cursor.execute("""
-            INSERT INTO usuarios (cpf, nome, rg, tipo)
+            INSERT INTO usuarios (cpf, nome, senha, tipo)
             VALUES (?, ?, ?, 1)
         """, (
             cpf,
             nome,
-            rg,
+            senha
         ))
         connection.commit()
 
@@ -221,7 +220,8 @@ def adicionar_eleitor(cpf, nome, rg):
             'mensagem': 'Erro ao adicionar eleitor.',
             'erro': erro
         }
-    connection.close()
+    finally:
+       connection.close()
 
 # Função para adicionar voto
 def votar(eleitor, candidato):
@@ -250,10 +250,39 @@ LIMIT 1
         return {'mensagem': 'sucesso'}
 
     except Exception as erro:
-        connection.close()
         print("Erro ao adicionar voto:", erro)
 
-        return {'mensagem': erro}
+        return {
+            'mensagem': 'Erro ao adicionar voto',
+            'erro': str(erro)
+        }
 
+    finally:
+        connection.close()
+
+def verificar_senha(cpf):
+    connection = sqlite3.connect("urna_futuro.db")
+    cursor = connection.cursor()
+    try:
+        cursor.execute('''
+SELECT cpf, senha
+FROM usuarios
+WHERE cpf = ?
+''', (cpf,))
+        user = cursor.fetchall()[0]
+        if len(user) > 0:
+            return {
+                "cpf": user[0],
+                "senha": user[1],
+                "check": True
+            }
+        else:
+            return {
+                "erro": "usuario nao encontrado",
+                'check': False
+            }
+    except Exception as erro:
+        print('erro no banco', str(erro))
+        return {'mensagem': str(erro), 'check': False}
     finally:
         connection.close()
