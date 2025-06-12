@@ -6,7 +6,7 @@ __pycache__/
 # Ignora arquivos de banco de dados SQLite
 *.sqlite
 *.sqlite3
-*.db
+urna_futuro.db
 
 # Ignora ambientes virtuais 
 venv/
