@@ -269,11 +269,12 @@ SELECT cpf, senha
 FROM usuarios
 WHERE cpf = ?
 ''', (cpf,))
-        user = cursor.fetchall()[0]
+        user = cursor.fetchall()
+        
         if len(user) > 0:
             return {
-                "cpf": user[0],
-                "senha": user[1],
+                "cpf": user[0][0],
+                "senha": user[0][1],
                 "check": True
             }
         else:
@@ -282,7 +283,7 @@ WHERE cpf = ?
                 'check': False
             }
     except Exception as erro:
-        print('erro no banco', str(erro))
+        print('erro no banco:', str(erro))
         return {'mensagem': str(erro), 'check': False}
     finally:
         connection.close()

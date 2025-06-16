@@ -1,21 +1,21 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from banco_de_dados import db
-import bcrypt
+from passlib.hash import bcrypt
 
 router = APIRouter(prefix='/users', tags=['users'])
 
 class Login(BaseModel):
-    cpf: int
+    cpf: str
     senha: str
 
 class User(BaseModel):
-    cpf: int
+    cpf: str
     nome: str
     senha: str
 
 @router.get('/')
-def get_users():
+async def get_users():
     # consultar o banco para conseguir a lista de usuários
     try:
         dados = db.ver_eleitores()
@@ -27,7 +27,7 @@ def get_users():
         raise HTTPException(status_code=500, detail='Erro interno do servidor')
 
 @router.get('/{cpf}')
-def get_user(cpf: int):
+async def get_user(cpf: int):
     # consultar o banco para conseguir um usuário
     eleitor = db.ver_eleitor(cpf)
     print(eleitor)
@@ -41,20 +41,19 @@ def get_user(cpf: int):
     }
 
 @router.post('/criar_eleitor')
-def criar_usuario(user: User):
+async def criar_usuario(user: User):
     # Registrar um usuário no banco de dados
     # se o cpf do usuário já existe retornar erro 409
     existe = True if db.ver_eleitor(user.cpf) else False
 
     if not existe: # caso o cpf seja novo
-        if not len(str(user.cpf)) == 11:
+        if not len(user.cpf) == 11:
             raise HTTPException(status_code=400, detail='dados inválidos')
 
-        senha_bytes = user.senha.encode()
-        senha_cript = bcrypt.hashpw(senha_bytes, bcrypt.gensalt())
-
+        senha_hash = bcrypt.hash(user.senha)
+    
         # cria o eleitor
-        eleitor = db.adicionar_eleitor(user.cpf, user.nome, senha_cript)
+        eleitor = db.adicionar_eleitor(int(user.cpf), user.nome, senha_hash)
 
         if eleitor.get('erro'): # se ocorreu um erro
             raise HTTPException(status_code=500, detail="erro interno do servidor")
@@ -64,13 +63,16 @@ def criar_usuario(user: User):
         raise HTTPException(status_code=409, detail='cpf já registrado no sistema')
 
 @router.post('/login')
-def login(login: Login):
+async def login(login: Login):
     check = db.verificar_senha(login.cpf)
 
     if check['check']:
         user = db.ver_eleitor(login.cpf)
 
-        if bcrypt.checkpw(login.senha.encode(), check['senha']):
+        print(type(login.senha.encode()))
+        print(type(check['senha']))
+
+        if bcrypt.verify(login.senha, check['senha']):
             return User(cpf=user[0], nome=user[1], senha='***')
         else:
             raise HTTPException(status_code=401, detail="Senha incorreta")

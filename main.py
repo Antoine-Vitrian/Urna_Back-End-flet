@@ -8,5 +8,5 @@ app.include_router(users.router)
 app.include_router(votos.router)
 
 @app.get('/')
-def root():
+async def root():
     return 'oi'
