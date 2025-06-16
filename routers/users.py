@@ -70,9 +70,10 @@ async def login(login: Login):
     if check['check']:
         user = db.ver_eleitor(login.cpf)
 
-        if bcrypt.verify(login.senha, check['senha']):
-            return User(cpf=user[0], nome=user[1], senha='***', tipo=user[3])
-        else:
-            raise HTTPException(status_code=401, detail="Senha incorreta")
+        if user:
+            if bcrypt.verify(login.senha, check['senha']):
+                return User(cpf=user[0], nome=user[1], senha='***', tipo=user[3])
+            else:
+                raise HTTPException(status_code=401, detail="Senha incorreta")
     else:
         raise HTTPException(status_code=404, detail="usuario nao encontrado")

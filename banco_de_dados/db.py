@@ -1,7 +1,6 @@
 # Banco de Dados Urna
-
-# Importando SQLite3
 import sqlite3
+from passlib.hash import bcrypt 
 
 # Conectando e criando o Banco de Dados ao código
 connection = sqlite3.connect("urna_futuro.db")
@@ -47,34 +46,40 @@ cursor.execute('''
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS votos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        eleitor INTEGER,
+        eleitor TEXT,
         candidato INTEGER,
-        FOREIGN KEY (eleitor) REFERENCES eleitores(cpf),
+        FOREIGN KEY (eleitor) REFERENCES usuarios(cpf),
         FOREIGN KEY (candidato) REFERENCES candidatos(numero)
     )
 ''')
 
-
-
 # checa se a tabela tipo_usuario já foi preenchida
 cursor.execute('SELECT * FROM tipo_usuario')
-existe = True if len(cursor.fetchall()) > 0 else False
+tipos = cursor.fetchall()
+existe = True if len(tipos) > 0 else False
 
 if not existe: # cria os tipos de usuários
     cursor.execute('''
     INSERT INTO tipo_usuario (tipo)
     VALUES('eleitor'), ('admin')
     ''')
+    connection.commit()
 
 # checa se o admin existe
 cursor.execute('SELECT * FROM usuarios WHERE tipo = 2')
-existe = True if len(cursor.fetchall()) > 0 else False
+adms = cursor.fetchall() # variável que facilita na hora de testar
+# print(adms)
+existe = True if len(adms) > 0 else False
 
 if not existe:
+    # faz o hash para a senha
+    senha_hash = bcrypt.hash(b'senhaAdm')
+
     cursor.execute('''
 INSERT INTO usuarios (cpf, nome, senha, tipo)
-VALUES (11111111111, 'Admin', 'senha_supersecreta', 2)
-''')
+VALUES (11111111111, 'Admin', ?, 2)
+''', (senha_hash,))
+    connection.commit()
 
 # Views
 cursor.execute('''
@@ -159,7 +164,7 @@ def ver_eleitor(cpf):
     eleitor = cursor.execute('''
 SELECT * 
 FROM usuarios
-WHERE cpf = ? AND tipo = 1
+WHERE cpf = ?
 ''', (cpf,)).fetchall()
     
     if len(eleitor) > 0:
