@@ -13,6 +13,7 @@ class User(BaseModel):
     cpf: str
     nome: str
     senha: str
+    tipo: int
 
 @router.get('/')
 async def get_users():
@@ -69,11 +70,8 @@ async def login(login: Login):
     if check['check']:
         user = db.ver_eleitor(login.cpf)
 
-        print(type(login.senha.encode()))
-        print(type(check['senha']))
-
         if bcrypt.verify(login.senha, check['senha']):
-            return User(cpf=user[0], nome=user[1], senha='***')
+            return User(cpf=user[0], nome=user[1], senha='***', tipo=user[3])
         else:
             raise HTTPException(status_code=401, detail="Senha incorreta")
     else:
