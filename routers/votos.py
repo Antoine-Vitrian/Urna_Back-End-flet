@@ -24,5 +24,7 @@ def votar(voto: Voto):
 
     if response['mensagem'] == 'sucesso':
         return {'status_code': 200}
+    elif response['mensagem'] == 'nao encontrado':
+        return {'status_code': 404}
     else:
         raise HTTPException(status_code=500)

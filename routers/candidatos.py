@@ -31,7 +31,7 @@ def get_candidato(num_cand: int = Path(..., description='O número do candidato 
     candidato = db.ver_candidato(num_cand)
 
     # condição: se o candidato não existe retornar erro 404
-    if not candidato:
+    if candidato is None:
         raise HTTPException(status_code=404, detail='Candidato não encontrado')
 
     return {

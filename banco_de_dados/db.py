@@ -232,6 +232,12 @@ def votar(eleitor, candidato):
     cursor = connection.cursor()
 
     try:
+        cursor.execute('SELECT * FROM candidatos WHERE numero = ?', (candidato,))
+        cand = cursor.fetchall()
+
+        if len(cand) == 0:
+            return {'mensagem': 'nao encontrado'}
+
         cursor.execute("""
             INSERT INTO votos (eleitor, candidato)
             VALUES (?, ?)
