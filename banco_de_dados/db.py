@@ -109,9 +109,7 @@ def ver_votos_function():
     cursor = connection.cursor()
     # Executa a View
     votos = cursor.execute('''
-    SELECT 
-        nome,
-        total_votos
+    SELECT *
     FROM votos_por_candidato
 ''').fetchall()
     

@@ -5,7 +5,7 @@ from banco_de_dados import db
 router = APIRouter(prefix='/votos', tags=['votos'])
 
 class Voto(BaseModel):
-    cpf_eleitor: int
+    cpf_eleitor: str
     num_cand: int
 
 @router.get('/')
@@ -23,6 +23,6 @@ def votar(voto: Voto):
     print(response)
 
     if response['mensagem'] == 'sucesso':
-        return {'status': 'sucesso'}
+        return {'status_code': 200}
     else:
         raise HTTPException(status_code=500)
